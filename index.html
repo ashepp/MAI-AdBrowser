@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAI AdBrowser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --pivot-primary: #0078d4;
+            --pivot-accent: #50e6ff;
+            --pivot-bg: #1a1a2e;
+            --pivot-bg-light: #16213e;
+            --pivot-border: #0f3460;
+            --pivot-text: #ffffff;
+            --pivot-text-dim: #b0b0b0;
+            --pivot-hover: rgba(80, 230, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--pivot-bg);
+            color: var(--pivot-text);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Main Layout */
+        .pivot-app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .pivot-header {
+            height: 48px;
+            background: var(--pivot-bg-light);
+            border-bottom: 1px solid var(--pivot-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--pivot-accent);
+            letter-spacing: -0.5px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 12px;
+            border-right: 1px solid var(--pivot-border);
+        }
+
+        .control-group:last-child {
+            border-right: none;
+        }
+
+        .control-label {
+            font-size: 11px;
+            color: var(--pivot-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, button {
+            background: var(--pivot-bg);
+            border: 1px solid var(--pivot-border);
+            color: var(--pivot-text);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: #ffffff;
+        }
+
+        select:hover, button:hover {
+            background: var(--pivot-hover);
+            border-color: var(--pivot-accent);
+        }
+
+        select:focus, button:focus {
+            outline: none;
+            border-color: var(--pivot-accent);
+        }
+
+        .header-stats {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 12px;
+            color: var(--pivot-text-dim);
+        }
+
+        .stat-value {
+            color: var(--pivot-accent);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .pivot-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Sidebar - Filters */
+        .pivot-sidebar {
+            width: 220px;
+            background: var(--pivot-bg-light);
+            border-right: 1px solid var(--pivot-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow-y: auto;
+            transition: opacity 0.3s ease;
+        }
+
+        .pivot-sidebar.dimmed {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .filter-section {
+            border-bottom: 1px solid var(--pivot-border);
+        }
+
+        .filter-header {
+            padding: 12px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--pivot-text-dim);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s ease;
+        }
+
+        .filter-header:hover {
+            background: var(--pivot-hover);
+        }
+
+        .filter-header .toggle {
+            font-size: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .filter-section.collapsed .filter-header .toggle {
+            transform: rotate(-90deg);
+        }
+
+        .filter-section.collapsed .filter-options {
+            display: none;
+        }
+
+        .filter-options {
+            padding: 0 16px 12px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            cursor: pointer;
+            transition: color 0.15s ease;
+        }
+
+        .filter-option:hover {
+            color: var(--pivot-accent);
+        }
+
+        .filter-option input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--pivot-accent);
+            cursor: pointer;
+        }
+
+        .filter-option label {
+            flex: 1;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .filter-count {
+            color: var(--pivot-text-dim);
+            font-size: 11px;
+        }
+
+        /* Canvas Area */
+        .pivot-canvas {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .canvas-header {
+            height: 36px;
+            background: var(--pivot-bg);
+            border-bottom: 1px solid var(--pivot-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+
+        .breadcrumb {
+            font-size: 13px;
+            color: var(--pivot-text-dim);
+        }
+
+        .breadcrumb .current {
+            color: var(--pivot-text);
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .zoom-btn {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border-radius: 4px;
+        }
+
+        .zoom-level {
+            font-size: 11px;
+            color: var(--pivot-text-dim);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Grid Container */
+        .grid-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: var(--pivot-bg);
+            cursor: grab;
+        }
+        
+        .grid-container:active {
+            cursor: grabbing;
+        }
+
+        .grid-wrapper {
+            position: relative;
+            min-height: 100%;
+            padding: 20px;
+            transform-origin: top left;
+        }
+
+        /* Grid Items */
+        .grid-item {
+            position: absolute;
+            cursor: pointer;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #222;
+            will-change: transform, opacity;
+        }
+
+        .grid-item:hover {
+            box-shadow: 0 0 0 2px var(--pivot-accent), 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+
+        .grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .grid-item.selected {
+            box-shadow: 0 0 0 3px var(--pivot-accent);
+        }
+
+        /* Group Labels - Bottom aligned like original Pivot */
+        .group-label {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: center;
+            pointer-events: none;
+            padding: 8px 12px;
+            background: rgba(22, 33, 62, 0.85);
+            border-radius: 6px;
+        }
+
+        .group-label .label-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .group-label .label-count {
+            font-size: 12px;
+            color: var(--pivot-accent);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        
+        /* Highlight column on hover */
+        .group-label:hover .label-text {
+            color: var(--pivot-accent);
+        }
+
+        /* Detail Panel - Right Slide Out */
+        .detail-panel {
+            position: fixed;
+            top: 48px;
+            right: 0;
+            bottom: 0;
+            width: 400px;
+            background: var(--pivot-bg-light);
+            border-left: 1px solid var(--pivot-border);
+            display: none;
+            flex-direction: column;
+            z-index: 200;
+            box-shadow: -4px 0 24px rgba(0,0,0,0.4);
+        }
+
+        .detail-header {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--pivot-border);
+            flex-shrink: 0;
+        }
+
+        .detail-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            font-size: 18px;
+        }
+
+        .detail-position {
+            font-size: 12px;
+            color: var(--pivot-text-dim);
+        }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            font-size: 20px;
+            background: transparent;
+            border: none;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,100,100,0.2);
+            color: #ff6464;
+        }
+
+        .detail-image-container {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--pivot-bg);
+            min-height: 200px;
+        }
+
+        .detail-image {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .detail-meta {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .meta-section {
+            margin-bottom: 20px;
+        }
+
+        .meta-section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--pivot-text-dim);
+            margin-bottom: 10px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--pivot-border);
+            font-size: 13px;
+        }
+
+        .meta-label {
+            color: var(--pivot-text-dim);
+        }
+
+        .meta-value {
+            color: var(--pivot-text);
+            font-weight: 500;
+        }
+        
+        /* Star rating styles */
+        .rating-stars {
+            font-family: sans-serif;
+            letter-spacing: 1px;
+        }
+        
+        /* Rating colors by star count (1-5) */
+        .meta-value.rating-5 { color: #4ade80; } /* Green - excellent */
+        .meta-value.rating-4 { color: #86efac; } /* Light green - good */
+        .meta-value.rating-3 { color: #fbbf24; } /* Yellow - average */
+        .meta-value.rating-2 { color: #fb923c; } /* Orange - below average */
+        .meta-value.rating-1 { color: #f87171; } /* Red - poor */
+        
+        /* Status colors */
+        .meta-value.status-active { color: #4ade80; }
+        .meta-value.status-paused { color: #fbbf24; }
+        .meta-value.status-review { color: #60a5fa; }
+        .meta-value.status-archived { color: var(--pivot-text-dim); }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--pivot-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--pivot-border);
+            border-top-color: var(--pivot-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--pivot-text-dim);
+            font-size: 14px;
+        }
+
+        /* Keyboard Hints */
+        .keyboard-hints {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            background: var(--pivot-bg-light);
+            border: 1px solid var(--pivot-border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 11px;
+            color: var(--pivot-text-dim);
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+            z-index: 50;
+        }
+
+        .keyboard-hints:hover {
+            opacity: 1;
+        }
+
+        .keyboard-hints kbd {
+            background: var(--pivot-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid var(--pivot-border);
+            font-family: monospace;
+            margin-right: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pivot-app">
+        <!-- Header -->
+        <header class="pivot-header">
+            <div class="header-left">
+                <div class="logo">⬡ MAI AdBrowser <span style="font-size: 0.6em; opacity: 0.7;">v1.0</span></div>
+                <div class="header-controls">
+                    <div class="control-group">
+                        <span class="control-label">Group by</span>
+                        <select id="group-by">
+                            <option value="">None (Grid)</option>
+                            <option value="vertical">MSN Vertical</option>
+                            <option value="size">Ad Size</option>
+                            <option value="adType">Ad Type</option>
+                            <option value="rating">Rating</option>
+                            <option value="brand">Brand Category</option>
+                            <option value="status">Status</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <span class="control-label">Sort by</span>
+                        <select id="sort-by">
+                            <option value="id">Default</option>
+                            <option value="vertical">Vertical</option>
+                            <option value="size" selected>Size</option>
+                            <option value="rating">Rating</option>
+                            <option value="adType">Ad Type</option>
+                            <option value="brand">Brand</option>
+                            <option value="impressions">Impressions</option>
+                        </select>
+                        <select id="sort-order">
+                            <option value="asc">A → Z</option>
+                            <option value="desc">Z → A</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <button id="clear-filters">Clear All</button>
+                    </div>
+                </div>
+            </div>
+            <div class="header-stats">
+                <span>Showing <span class="stat-value" id="visible-count">0</span> of <span id="total-count">0</span> ads</span>
+                <div style="font-size: 0.75em; opacity: 0.6; margin-top: 2px;">DEMO AD CONTENT</div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="pivot-main">
+            <!-- Left Sidebar - Filters -->
+            <aside class="pivot-sidebar" id="sidebar">
+                <div class="filter-section" data-field="vertical">
+                    <div class="filter-header">
+                        <span>MSN Vertical</span>
+                        <span class="toggle">▼</span>
+                    </div>
+                    <div class="filter-options" id="filter-vertical"></div>
+                </div>
+                <div class="filter-section" data-field="size">
+                    <div class="filter-header">
+                        <span>Ad Size</span>
+                        <span class="toggle">▼</span>
+                    </div>
+                    <div class="filter-options" id="filter-size"></div>
+                </div>
+                <div class="filter-section" data-field="rating">
+                    <div class="filter-header">
+                        <span>Rating</span>
+                        <span class="toggle">▼</span>
+                    </div>
+                    <div class="filter-options" id="filter-rating"></div>
+                </div>
+                <div class="filter-section" data-field="adType">
+                    <div class="filter-header">
+                        <span>Ad Type</span>
+                        <span class="toggle">▼</span>
+                    </div>
+                    <div class="filter-options" id="filter-adType"></div>
+                </div>
+                <div class="filter-section" data-field="brand">
+                    <div class="filter-header">
+                        <span>Brand Category</span>
+                        <span class="toggle">▼</span>
+                    </div>
+                    <div class="filter-options" id="filter-brand"></div>
+                </div>
+                <div class="filter-section" data-field="status">
+                    <div class="filter-header">
+                        <span>Status</span>
+                        <span class="toggle">▼</span>
+                    </div>
+                    <div class="filter-options" id="filter-status"></div>
+                </div>
+            </aside>
+
+            <!-- Canvas Area -->
+            <div class="pivot-canvas" id="canvas-area">
+                <div class="canvas-header">
+                    <div class="breadcrumb">
+                        <span class="current" id="view-title">All Ads</span>
+                    </div>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" id="zoom-out" title="Zoom out">−</button>
+                        <span class="zoom-level" id="zoom-level">100%</span>
+                        <button class="zoom-btn" id="zoom-in" title="Zoom in">+</button>
+                        <button class="zoom-btn" id="zoom-fit" title="Fit to view">⌂</button>
+                    </div>
+                </div>
+                <div class="grid-container" id="grid-container">
+                    <div class="grid-wrapper" id="grid-wrapper"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Detail Panel (Right Slide-out) -->
+        <aside class="detail-panel" id="detail-panel">
+            <div class="detail-header">
+                <div class="detail-nav">
+                    <button class="nav-btn" id="prev-item" title="Previous (←)">←</button>
+                    <span class="detail-position"><span id="current-index">1</span> of <span id="filtered-count">100</span></span>
+                    <button class="nav-btn" id="next-item" title="Next (→)">→</button>
+                </div>
+                <button class="close-btn" id="close-detail" title="Close (Esc)">×</button>
+            </div>
+            <div class="detail-image-container">
+                <img class="detail-image" id="detail-image" src="" alt="Ad preview">
+            </div>
+            <div class="detail-meta" id="detail-meta"></div>
+        </aside>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading collection...</div>
+    </div>
+
+    <!-- Keyboard Hints -->
+    <div class="keyboard-hints">
+        <kbd>Esc</kbd> Close · <kbd>←</kbd><kbd>→</kbd> Navigate · <kbd>+</kbd><kbd>−</kbd> Zoom
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/pivot-animator.js"></script>
+    <script src="js/pivot-app.js"></script>
+</body>
+</html>
